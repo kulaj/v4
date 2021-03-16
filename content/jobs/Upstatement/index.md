@@ -2,7 +2,7 @@
 date: '2018-05-14'
 title: 'Engineer'
 company: 'Upstatement'
-location: 'Boston, MA'
+location: 'Ann Arbor, MI'
 range: 'May 2018 - Present'
 url: 'https://www.upstatement.com/'
 ---

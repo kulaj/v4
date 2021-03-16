@@ -2,7 +2,7 @@
 date: '2015-12-21'
 title: 'Creative Technologist Co-op'
 company: 'MullenLowe'
-location: 'Boston, MA'
+location: 'Ann Arbor, MI'
 range: 'July - December 2015'
 url: 'https://us.mullenlowe.com/'
 ---
