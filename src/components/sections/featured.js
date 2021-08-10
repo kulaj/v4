@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { useStaticQuery, graphql } from 'gatsby';
-import Img from 'gatsby-image';
+import { GatsbyImage, getImage } from 'gatsby-plugin-image';
 import styled from 'styled-components';
 import sr from '@utils/sr';
 import { srConfig } from '@config';
 import { Icon } from '@components/icons';
+import { usePrefersReducedMotion } from '@hooks';
 
 const StyledProjectsGrid = styled.ul`
   ${({ theme }) => theme.mixins.resetList};
@@ -21,6 +22,10 @@ const StyledProject = styled.li`
   grid-gap: 10px;
   grid-template-columns: repeat(12, 1fr);
   align-items: center;
+
+  @media (max-width: 768px) {
+    ${({ theme }) => theme.mixins.boxShadow};
+  }
 
   &:not(:last-of-type) {
     margin-bottom: 100px;
@@ -45,6 +50,7 @@ const StyledProject = styled.li`
       @media (max-width: 768px) {
         grid-column: 1 / -1;
         padding: 40px 40px 30px;
+        text-align: left;
       }
       @media (max-width: 480px) {
         padding: 25px 25px 20px;
@@ -53,11 +59,15 @@ const StyledProject = styled.li`
     .project-tech-list {
       justify-content: flex-end;
 
+      @media (max-width: 768px) {
+        justify-content: flex-start;
+      }
+
       li {
         margin: 0 0 5px 20px;
 
         @media (max-width: 768px) {
-          margin: 0 0 5px 10px;
+          margin: 0 10px 5px 0;
         }
       }
     }
@@ -65,6 +75,12 @@ const StyledProject = styled.li`
       justify-content: flex-end;
       margin-left: 0;
       margin-right: -10px;
+
+      @media (max-width: 768px) {
+        justify-content: flex-start;
+        margin-left: -10px;
+        margin-right: 0;
+      }
     }
     .project-image {
       grid-column: 1 / 8;
@@ -229,6 +245,7 @@ const StyledProject = styled.li`
 
     a {
       width: 100%;
+      height: 100%;
       background-color: var(--green);
       border-radius: var(--border-radius);
       vertical-align: middle;
@@ -278,7 +295,7 @@ const StyledProject = styled.li`
 
 const Featured = () => {
   const data = useStaticQuery(graphql`
-    query {
+    {
       featured: allMarkdownRemark(
         filter: { fileAbsolutePath: { regex: "/featured/" } }
         sort: { fields: [frontmatter___date], order: DESC }
@@ -289,9 +306,7 @@ const Featured = () => {
               title
               cover {
                 childImageSharp {
-                  fluid(maxWidth: 700, traceSVG: { color: "#FFCB05" }) {
-                    ...GatsbyImageSharpFluid_withWebp_tracedSVG
-                  }
+                  gatsbyImageData(width: 700, placeholder: BLURRED, formats: [AUTO, WEBP, AVIF])
                 }
               }
               tech
@@ -306,10 +321,15 @@ const Featured = () => {
   `);
 
   const featuredProjects = data.featured.edges.filter(({ node }) => node);
-
   const revealTitle = useRef(null);
   const revealProjects = useRef([]);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
     sr.reveal(revealTitle.current, srConfig());
     revealProjects.current.forEach((ref, i) => sr.reveal(ref, srConfig(i * 100)));
   }, []);
@@ -325,6 +345,7 @@ const Featured = () => {
           featuredProjects.map(({ node }, i) => {
             const { frontmatter, html } = node;
             const { external, title, tech, github, cover } = frontmatter;
+            const image = getImage(cover);
 
             return (
               <StyledProject key={i} ref={el => (revealProjects.current[i] = el)}>
@@ -366,7 +387,7 @@ const Featured = () => {
 
                 <div className="project-image">
                   <a href={external ? external : github ? github : '#'}>
-                    <Img fluid={cover.childImageSharp.fluid} alt={title} className="img" />
+                    <GatsbyImage image={image} alt={title} className="img" />
                   </a>
                 </div>
               </StyledProject>

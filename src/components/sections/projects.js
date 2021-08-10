@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { srConfig } from '@config';
 import sr from '@utils/sr';
 import { Icon } from '@components/icons';
+import { usePrefersReducedMotion } from '@hooks';
 
 const StyledProjectsSection = styled.section`
   display: flex;
@@ -34,11 +35,6 @@ const StyledProjectsSection = styled.section`
     @media (max-width: 1080px) {
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
-
-    a {
-      position: relative;
-      z-index: 1;
-    }
   }
 
   .more-button {
@@ -52,11 +48,18 @@ const StyledProject = styled.li`
   cursor: default;
   transition: var(--transition);
 
-  &:hover,
-  &:focus-within {
-    .project-inner {
-      transform: translateY(-7px);
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover,
+    &:focus-within {
+      .project-inner {
+        transform: translateY(-7px);
+      }
     }
+  }
+
+  a {
+    position: relative;
+    z-index: 1;
   }
 
   .project-inner {
@@ -190,8 +193,13 @@ const Projects = () => {
   const revealTitle = useRef(null);
   const revealArchiveLink = useRef(null);
   const revealProjects = useRef([]);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
     sr.reveal(revealTitle.current, srConfig());
     sr.reveal(revealArchiveLink.current, srConfig());
     revealProjects.current.forEach((ref, i) => sr.reveal(ref, srConfig(i * 100)));
@@ -202,6 +210,58 @@ const Projects = () => {
   const firstSix = projects.slice(0, GRID_LIMIT);
   const projectsToShow = showMore ? projects : firstSix;
 
+  const projectInner = node => {
+    const { frontmatter, html } = node;
+    const { github, external, title, tech } = frontmatter;
+
+    return (
+      <div className="project-inner">
+        <header>
+          <div className="project-top">
+            <div className="folder">
+              <Icon name="Folder" />
+            </div>
+            <div className="project-links">
+              {github && (
+                <a href={github} aria-label="GitHub Link" target="_blank" rel="noreferrer">
+                  <Icon name="GitHub" />
+                </a>
+              )}
+              {external && (
+                <a
+                  href={external}
+                  aria-label="External Link"
+                  className="external"
+                  target="_blank"
+                  rel="noreferrer">
+                  <Icon name="External" />
+                </a>
+              )}
+            </div>
+          </div>
+
+          <h3 className="project-title">
+            <a href={external} target="_blank" rel="noreferrer">
+              {title}
+            </a>
+          </h3>
+
+          <div className="project-description" dangerouslySetInnerHTML={{ __html: html }} />
+        </header>
+
+        <footer>
+          {tech && (
+            <ul className="project-tech-list">
+              {tech.map((tech, i) => (
+                <li key={i}>{tech}</li>
+              ))}
+            </ul>
+          )}
+        </footer>
+      </div>
+    );
+  };
+
   return (
     <StyledProjectsSection>
       <h2 ref={revealTitle}>Other Noteworthy Projects</h2>
@@ -211,13 +271,17 @@ const Projects = () => {
       </Link>
 
       <ul className="projects-grid">
-        <TransitionGroup component={null}>
-          {projectsToShow &&
-            projectsToShow.map(({ node }, i) => {
-              const { frontmatter, html } = node;
-              const { github, external, title, tech } = frontmatter;
-
-              return (
+        {prefersReducedMotion ? (
+          <>
+            {projectsToShow &&
+              projectsToShow.map(({ node }, i) => (
+                <StyledProject key={i}>{projectInner(node)}</StyledProject>
+              ))}
+          </>
+        ) : (
+          <TransitionGroup component={null}>
+            {projectsToShow &&
+              projectsToShow.map(({ node }, i) => (
                 <CSSTransition
                   key={i}
                   classNames="fadeup"
@@ -229,51 +293,12 @@ const Projects = () => {
                     style={{
                       transitionDelay: `${i >= GRID_LIMIT ? (i - GRID_LIMIT) * 100 : 0}ms`,
                     }}>
-                    <div className="project-inner">
-                      <header>
-                        <div className="project-top">
-                          <div className="folder">
-                            <Icon name="Folder" />
-                          </div>
-                          <div className="project-links">
-                            {github && (
-                              <a href={github} aria-label="GitHub Link">
-                                <Icon name="GitHub" />
-                              </a>
-                            )}
-                            {external && (
-                              <a href={external} aria-label="External Link" className="external">
-                                <Icon name="External" />
-                              </a>
-                            )}
-                          </div>
-                        </div>
-
-                        <h3 className="project-title">
-                          <a href={external}>{title}</a>
-                        </h3>
-
-                        <div
-                          className="project-description"
-                          dangerouslySetInnerHTML={{ __html: html }}
-                        />
-                      </header>
-
-                      <footer>
-                        {tech && (
-                          <ul className="project-tech-list">
-                            {tech.map((tech, i) => (
-                              <li key={i}>{tech}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </footer>
-                    </div>
+                    {projectInner(node)}
                   </StyledProject>
                 </CSSTransition>
-              );
-            })}
-        </TransitionGroup>
+              ))}
+          </TransitionGroup>
+        )}
       </ul>
 
       <button className="more-button" onClick={() => setShowMore(!showMore)}>

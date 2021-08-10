@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { srConfig } from '@config';
 import { KEY_CODES } from '@utils';
 import sr from '@utils/sr';
+import { usePrefersReducedMotion } from '@hooks';
 
 const StyledJobsSection = styled.section`
   max-width: 700px;
@@ -14,6 +15,11 @@ const StyledJobsSection = styled.section`
 
     @media (max-width: 600px) {
       display: block;
+    }
+
+    // Prevent container from jumping
+    @media (min-width: 700px) {
+      min-height: 340px;
     }
   }
 `;
@@ -30,11 +36,13 @@ const StyledTabList = styled.div`
     display: flex;
     overflow-x: auto;
     width: calc(100% + 100px);
+    padding-left: 50px;
     margin-left: -50px;
     margin-bottom: 30px;
   }
   @media (max-width: 480px) {
     width: calc(100% + 50px);
+    padding-left: 25px;
     margin-left: -25px;
   }
 
@@ -119,6 +127,8 @@ const StyledHighlight = styled.div`
 `;
 
 const StyledTabPanels = styled.div`
+  position: relative;
+  width: 100%;
   margin-left: 20px;
 
   @media (max-width: 600px) {
@@ -182,9 +192,16 @@ const Jobs = () => {
   const [activeTabId, setActiveTabId] = useState(0);
   const [tabFocus, setTabFocus] = useState(null);
   const tabs = useRef([]);
-
   const revealContainer = useRef(null);
-  useEffect(() => sr.reveal(revealContainer.current, srConfig()), []);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
+    sr.reveal(revealContainer.current, srConfig());
+  }, []);
 
   const focusTab = () => {
     if (tabs.current[tabFocus]) {
